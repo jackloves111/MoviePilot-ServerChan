@@ -7,7 +7,6 @@ from urllib.parse import urlencode
 from app.core.event import eventmanager, Event
 from app.log import logger
 from app.plugins import _PluginBase
-from app.schemas.types import EventType, MessageChannel
 from app.utils.http import RequestUtils
 from app.chain.message import MessageChain
 
@@ -267,8 +266,9 @@ class ServerChan(_PluginBase):
                             
                             if chat_id and text:
                                 logger.info(f"Server酱³ 收到消息: {text}, chat_id: {chat_id}")
+                                # 由于 MessageChannel 枚举定义中没有 ServerChan，直接传字符串标识
                                 MessageChain().handle_message(
-                                    channel=MessageChannel.ServerChan,
+                                    channel="ServerChan",
                                     source=self.plugin_name,
                                     userid=chat_id,
                                     username=str(chat_id),
@@ -348,7 +348,7 @@ class ServerChan(_PluginBase):
             logger.error(f"Server酱³消息发送异常: {str(e)}")
             return False, str(e)
 
-    @eventmanager.register(EventType.NoticeMessage)
+    @eventmanager.register("NoticeMessage")
     def send(self, event: Event):
         """
         消息发送事件
