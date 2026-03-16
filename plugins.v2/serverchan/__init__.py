@@ -412,6 +412,8 @@ class ServerChan(_PluginBase):
         # 尝试解析 event_data
         event_data = event.event_data
         
+        logger.info(f"Server酱³ NoticeMessage 接收到原始事件数据: {type(event_data)}")
+        
         # 1. 处理 Notification 对象或字典
         if isinstance(event_data, dict):
             # 可能是直接的字典
@@ -424,7 +426,7 @@ class ServerChan(_PluginBase):
              msg_body = event_data
 
         # 打印调试日志，确认拦截逻辑是否触发
-        # logger.debug(f"ServerChan Event Data: {msg_body}")
+        logger.info(f"Server酱³ NoticeMessage 提取的消息体: {msg_body}")
              
         # 获取消息属性
         channel = msg_body.get("channel")
@@ -437,6 +439,8 @@ class ServerChan(_PluginBase):
         
         channel_value = channel.value if hasattr(channel, "value") else channel
         web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
+        
+        logger.info(f"Server酱³ 拦截检查: channel={channel_value}, source={source}, plugin_name={self.plugin_name}")
         
         if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
              logger.info(f"Server酱³ 拦截到回复消息: {msg_body.get('title')}")
