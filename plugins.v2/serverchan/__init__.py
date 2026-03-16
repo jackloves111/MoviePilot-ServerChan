@@ -422,6 +422,9 @@ class ServerChan(_PluginBase):
         else:
              # 未知类型，尝试直接属性访问
              msg_body = event_data
+
+        # 打印调试日志，确认拦截逻辑是否触发
+        # logger.debug(f"ServerChan Event Data: {msg_body}")
              
         # 获取消息属性
         channel = msg_body.get("channel")
@@ -429,7 +432,13 @@ class ServerChan(_PluginBase):
         
         # 检查是否需要拦截转发
         # 条件：渠道是 Web，且来源是 Server酱³通知
-        if channel == MessageChannel.Web and source == self.plugin_name:
+        # 注意：MessageChannel.Web 的值是 "Web" (str)，但这里 channel 可能是 MessageChannel.Web (Enum)
+        # 所以最好比较值
+        
+        channel_value = channel.value if hasattr(channel, "value") else channel
+        web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
+        
+        if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
              logger.info(f"Server酱³ 拦截到回复消息: {msg_body.get('title')}")
              # 提取内容
              title = msg_body.get("title")
