@@ -14,18 +14,41 @@ from app.schemas.types import MessageChannel, EventType
 
 # 动态注入 ServerChan 到 MessageChannel 枚举中
 if not hasattr(MessageChannel, "ServerChan"):
-    # 使用 extend_enum 或直接 monkey patch 方式
-    # 由于 Enum 是不可变的，标准库 Enum 不支持动态添加成员。
-    # 这里我们采用一种妥协方案：在运行时让 MessageChannel.ServerChan 可访问（仅作为属性），
-    # 或者直接使用字符串传递给 handle_message，但需要确保 handle_message 内部不做严格的 Enum 类型检查。
-    # 根据之前的错误 "type object 'MessageChannel' has no attribute 'ServerChan'"，
-    # 说明代码中有显式调用 MessageChannel.ServerChan。
-    # 我们直接在这里定义一个伪造的属性。
+    # 尝试通过扩展 Enum 的 _member_map_ 来注入（Hack）
+    # Pydantic 验证枚举时会检查值是否在枚举成员中
     try:
-        # 尝试通过扩展 Enum 的 _member_map_ 来注入（Hack）
-        # 注意：这依赖于 Python Enum 的内部实现，不同版本可能不同。
-        # 安全起见，我们还是在调用处使用字符串，但为了兼容可能的其他引用，我们给 MessageChannel 挂载一个属性。
-        setattr(MessageChannel, "ServerChan", "ServerChan")
+        # 创建一个新的枚举成员
+        # 注意：Python Enum 的内部实现可能因版本而异，这里针对 Python 3.12+ 和 Pydantic v2 进行适配
+        
+        # 1. 注入属性，使得 MessageChannel.ServerChan 可访问
+        # 这对于代码中直接引用 MessageChannel.ServerChan 是必须的
+        # 但这不会更新 _value2member_map_，所以 Pydantic 验证仍然会失败
+        
+        # 2. 尝试更新 _value2member_map_ (Python < 3.11) 或 _value2member_map_ (Python 3.11+)
+        # 以及 _member_map_
+        
+        # 定义新成员的值
+        new_member_name = "ServerChan"
+        new_member_value = "ServerChan"
+        
+        # 构造新成员 (hacky way)
+        # 正常情况下 Enum 成员是单例的
+        # 这里我们手动创建一个
+        new_member = MessageChannel.__new__(MessageChannel)
+        new_member._name_ = new_member_name
+        new_member._value_ = new_member_value
+        
+        # 注入到类属性
+        setattr(MessageChannel, new_member_name, new_member)
+        
+        # 注入到 _member_map_
+        if hasattr(MessageChannel, '_member_map_'):
+             MessageChannel._member_map_[new_member_name] = new_member
+             
+        # 注入到 _value2member_map_
+        if hasattr(MessageChannel, '_value2member_map_'):
+            MessageChannel._value2member_map_[new_member_value] = new_member
+            
     except Exception as e:
         logger.warn(f"ServerChan 插件尝试注入 MessageChannel 失败: {e}")
 
