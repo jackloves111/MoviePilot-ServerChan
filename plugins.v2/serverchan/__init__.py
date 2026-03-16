@@ -10,7 +10,7 @@ from app.log import logger
 from app.plugins import _PluginBase
 from app.utils.http import RequestUtils
 from app.chain.message import MessageChain
-from app.schemas.types import MessageChannel
+from app.schemas.types import MessageChannel, EventType
 
 # 动态注入 ServerChan 到 MessageChannel 枚举中
 if not hasattr(MessageChannel, "ServerChan"):
@@ -371,7 +371,7 @@ class ServerChan(_PluginBase):
             logger.error(f"Server酱³消息发送异常: {str(e)}")
             return False, str(e)
 
-    @eventmanager.register("NoticeMessage")
+    @eventmanager.register(EventType.NoticeMessage)
     def send(self, event: Event):
         """
         消息发送事件
