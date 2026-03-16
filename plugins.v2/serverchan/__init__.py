@@ -307,14 +307,12 @@ class ServerChan(_PluginBase):
                             
                             if chat_id and text:
                                 logger.info(f"Server酱³ 收到消息: {text}, chat_id: {chat_id}")
-                                # 由于 MessageChannel 枚举定义中没有 ServerChan，且上游 handle_message 可能进行了类型注解检查
-                                # 我们这里传递 "ServerChan" 字符串，但为了保险起见（如果上游有 isinstance 检查），
-                                # 最好是能让 MessageChannel.ServerChan 存在。
-                                # 前面已经尝试注入属性。
-                                # 这里传递 MessageChannel.ServerChan 如果注入成功，否则传递字符串。
-                                channel = getattr(MessageChannel, "ServerChan", "ServerChan")
+                                # 由于 MessageChannel 枚举定义中没有 ServerChan，且 Pydantic 校验严格
+                                # 动态注入 Enum 成员在某些 Python/Pydantic 版本中无法生效
+                                # 因此这里退而求其次，使用 MessageChannel.Web 作为代理渠道
+                                # source 保持为 plugin_name，以便在日志中区分
                                 MessageChain().handle_message(
-                                    channel=channel,
+                                    channel=MessageChannel.Web,
                                     source=self.plugin_name,
                                     userid=chat_id,
                                     username=str(chat_id),
