@@ -13,6 +13,53 @@ from app.chain.message import MessageChain
 from app.schemas.types import MessageChannel, EventType
 from app.schemas.message import Notification
 
+# 猴子补丁：拦截 MessageChain.post_medias_message
+# 由于 post_medias_message 不会触发 EventType.NoticeMessage 事件，
+# 导致我们无法通过事件监听获取到媒体列表回复，必须直接拦截方法。
+_original_post_medias_message = MessageChain.post_medias_message
+
+def _patched_post_medias_message(self, message: Notification, medias: list) -> None:
+    try:
+        channel_value = message.channel.value if hasattr(message.channel, "value") else message.channel
+        web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
+        
+        # 如果是发给 Web 且来源是 Server酱³通知
+        if str(channel_value) == str(web_channel_value) and message.source == "Server酱³通知":
+            logger.info(f"Server酱³ 拦截到媒体列表回复消息: {message.title}")
+            
+            # 从 ServerChan 插件实例发送
+            # 我们需要获取插件实例。由于插件是单例的或可以通过事件/配置找到
+            # 最简单的方法是在模块级别保留一个引用，或者直接导入
+            
+            # 格式化列表
+            items = []
+            for idx, media in enumerate(medias, 1):
+                item_title = media.title_year if hasattr(media, "title_year") else media.title
+                item_vote = media.vote_average if hasattr(media, "vote_average") else None
+                
+                line = f"{idx}. {item_title}"
+                if item_vote:
+                    line += f" 评分：{item_vote}"
+                items.append(line)
+            
+            text = "\n".join(items)
+            title = message.title or "搜索结果"
+            
+            # 调用发送方法。由于这里是全局函数，我们需要引用插件实例。
+            # ServerChan 插件实例在加载时会被实例化，我们可以在 init_plugin 时保存自身引用。
+            if hasattr(MessageChain, "_serverchan_plugin_instance"):
+                plugin_instance = MessageChain._serverchan_plugin_instance
+                plugin_instance._send_message(title, text, message.userid)
+                return  # 拦截后不再走原流程
+    except Exception as e:
+        logger.error(f"Server酱³ 拦截 post_medias_message 异常: {e}")
+        
+    # 继续执行原始方法
+    return _original_post_medias_message(self, message, medias)
+
+# 应用补丁
+MessageChain.post_medias_message = _patched_post_medias_message
+
 # 动态注入 ServerChan 到 MessageChannel 枚举中
 if not hasattr(MessageChannel, "ServerChan"):
     # 尝试通过扩展 Enum 的 _member_map_ 来注入（Hack）
@@ -88,6 +135,9 @@ class ServerChan(_PluginBase):
     _push_api_base = "https://%s.push.ft07.com/send/%s.send"
 
     def init_plugin(self, config: dict = None):
+        # 保存自身引用到 MessageChain，供猴子补丁使用
+        MessageChain._serverchan_plugin_instance = self
+        
         if config:
             self._enabled = config.get("enabled")
             self._onlyonce = config.get("onlyonce")
