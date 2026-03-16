@@ -3,17 +3,13 @@
     "name": "Server酱³通知",
     "description": "通过Server酱³发送消息通知，支持APP推送",
     "labels": "通知,Server酱",
-    "version": "1.5.0",
+    "version": "1.0.0",
     "icon": "icons/serverchan.png",
     "author": "SilentReed",
     "level": 1,
     "v2": true,
     "history": {
-      "v1.5.0": "插件图标路径变更",
-      "v1.0.9": "增加本地图标文件",
-      "v1.0.8": "增加插件图标",
-      "v1.0.7": "修复消息类型过滤逻辑，增加日志输出",
-      "v1.0.6": "修复NotificationType属性错误"
+      "v1.0.0": "新插件发布"
     }
   }
 }
