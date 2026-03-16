@@ -50,13 +50,17 @@ class ServerChan(_PluginBase):
         if config:
             self._enabled = config.get("enabled")
             self._onlyonce = config.get("onlyonce")
-            self._uid = config.get("uid")
             self._sckey = config.get("sckey")
             self._token = config.get("token")
 
+            # 去除空白字符
+            if self._sckey:
+                self._sckey = self._sckey.strip()
+            if self._token:
+                self._token = self._token.strip()
+
         # 尝试自动获取UID
-        if not self._uid:
-            self._uid = self._auto_get_uid()
+        self._uid = self._auto_get_uid()
 
         # 优先使用配置的UID，Bot模式下会自动更新
         self._chat_id = self._uid
@@ -175,30 +179,6 @@ class ServerChan(_PluginBase):
                             }
                         ]
                     },
-                    # UID
-                    {
-                        'component': 'VRow',
-                        'content': [
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                    'md': 12
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VTextField',
-                                        'props': {
-                                            'model': 'uid',
-                                            'label': 'UID',
-                                            'placeholder': '可不填，自动获取',
-                                            'hint': 'Server酱³ 用户ID，可自动从SendKey或Bot Token获取',
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    },
                     # SendKey
                     {
                         'component': 'VRow',
@@ -251,7 +231,6 @@ class ServerChan(_PluginBase):
         ], {
             "enabled": False,
             "onlyonce": False,
-            "uid": "",
             "sckey": "",
             "token": ""
         }
@@ -313,32 +292,28 @@ class ServerChan(_PluginBase):
             # 1. Bot模式 (Bot Token)
             if self._token:
                 target_chat_id = userid or self._chat_id
-                if not target_chat_id:
-                     return False, "未获取到目标Chat ID"
-                
-                api_url = self._bot_api_base % self._token + "/sendMessage"
-                data = {
-                    "chat_id": target_chat_id,
-                    "text": f"*{title}*\n\n{text}",
-                    "parse_mode": "markdown",
-                }
-                res = RequestUtils().post_res(api_url, json=data)
-                if res and res.status_code == 200:
-                    result = res.json()
-                    if result.get("ok"):
-                        logger.info(f"Server酱³(Bot) 消息发送成功: {title}")
-                        return True, "发送成功"
+                if target_chat_id:
+                    api_url = self._bot_api_base % self._token + "/sendMessage"
+                    data = {
+                        "chat_id": target_chat_id,
+                        "text": f"*{title}*\n\n{text}",
+                        "parse_mode": "markdown",
+                    }
+                    res = RequestUtils().post_res(api_url, json=data)
+                    if res and res.status_code == 200:
+                        result = res.json()
+                        if result.get("ok"):
+                            logger.info(f"Server酱³(Bot) 消息发送成功: {title}")
+                            return True, "发送成功"
+                        else:
+                            error_msg = result.get("description", "未知错误")
+                            logger.warn(f"Server酱³(Bot) 消息发送失败: {error_msg}")
                     else:
-                        error_msg = result.get("description", "未知错误")
-                        logger.warn(f"Server酱³(Bot) 消息发送失败: {error_msg}")
-                        return False, error_msg
-                else:
-                     status = res.status_code if res else "None"
-                     logger.warn(f"Server酱³(Bot) 消息发送失败，状态码: {status}")
-                     return False, f"请求失败，状态码: {status}"
+                        status = res.status_code if res else "None"
+                        logger.warn(f"Server酱³(Bot) 消息发送失败，状态码: {status}")
 
-            # 2. SendKey模式
-            elif self._sckey:
+            # 2. SendKey模式 (Bot失败或未配置Bot时尝试)
+            if self._sckey:
                 if not self._uid:
                     return False, "SendKey模式需要配置UID"
                 
@@ -363,6 +338,9 @@ class ServerChan(_PluginBase):
                     status = res.status_code if res else "None"
                     logger.warn(f"Server酱³(SendKey) 消息发送失败，状态码: {status}")
                     return False, f"请求失败，状态码: {status}"
+
+            if self._token:
+                return False, "Bot发送失败且未配置SendKey或SendKey模式不可用"
             else:
                 return False, "未配置Bot Token或SendKey"
                 
