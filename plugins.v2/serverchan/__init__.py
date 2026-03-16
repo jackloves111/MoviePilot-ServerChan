@@ -448,8 +448,42 @@ class ServerChan(_PluginBase):
              # 如果是列表选择消息（SearchResult），MoviePilot 会发送 Notification 对象
              # 我们需要处理这种情况
              
+             # 检查是否包含媒体列表
+             # 在 MoviePilot V2 插件架构中，post_medias_message 会在 Notification 中附带 medias 列表
+             # 但通过 Event 传递时，medias 可能被放在 note 字段中，或者通过其他方式传递
+             # 实际上，EventData 中可能并不包含 medias，或者包含在 note 中
+             
+             # 查看日志：'message': Notification(..., title='【放牛班的春天】共找到1条相关信息，请回复对应数字选择', ...)
+             # 这说明 event_data 主要是 Notification 对象
+             # 对于列表消息，我们需要特殊格式化
+             
+             # 尝试从 event_data 获取 note，其中可能包含媒体列表
+             note = msg_body.get("note")
+             if note and isinstance(note, list):
+                 # 这是一条媒体列表消息
+                 # 使用 send_list_msg 逻辑进行格式化
+                 # 但这里我们没有 send_list_msg 方法（那是 app.message.client.serverchan.ServerChan 的）
+                 # 所以我们需要自己实现简单的列表格式化
+                 
+                 items = []
+                 for idx, item in enumerate(note, 1):
+                     # item 是字典
+                     item_title = item.get("title") or item.get("name")
+                     item_year = item.get("year")
+                     item_type = item.get("type")
+                     item_vote = item.get("vote_average")
+                     
+                     line = f"{idx}. {item_title} ({item_year})"
+                     if item_vote:
+                         line += f" 评分：{item_vote}"
+                     items.append(line)
+                 
+                 text = "\n".join(items)
+                 if title:
+                     text = f"{title}\n\n{text}"
+             
              # 如果没有 text 但有 title，可能是列表选择提示
-             if not text and title:
+             elif not text and title:
                  text = title
                  title = "系统通知"
                  
