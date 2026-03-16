@@ -394,18 +394,21 @@ class ServerChan(_PluginBase):
                         "text": f"*{title}*\n\n{text}",
                         "parse_mode": "markdown",
                     }
-                    res = RequestUtils().post_res(api_url, json=data)
-                    if res and res.status_code == 200:
-                        result = res.json()
-                        if result.get("ok"):
-                            logger.info(f"Server酱³(Bot) 消息发送成功: {title}")
-                            return True, "发送成功"
+                    try:
+                        res = RequestUtils(headers={'Content-Type': 'application/json'}).post_res(api_url, json=data)
+                        if res and res.status_code == 200:
+                            result = res.json()
+                            if result.get("ok"):
+                                logger.info(f"Server酱³(Bot) 消息发送成功: {title}")
+                                return True, "发送成功"
+                            else:
+                                error_msg = result.get("description", "未知错误")
+                                logger.warn(f"Server酱³(Bot) 消息发送失败: {error_msg}")
                         else:
-                            error_msg = result.get("description", "未知错误")
-                            logger.warn(f"Server酱³(Bot) 消息发送失败: {error_msg}")
-                    else:
-                        status = res.status_code if res else "None"
-                        logger.warn(f"Server酱³(Bot) 消息发送失败，状态码: {status}")
+                            status = res.status_code if res else "None"
+                            logger.warn(f"Server酱³(Bot) 消息发送失败，状态码: {status}")
+                    except Exception as e:
+                        logger.error(f"Server酱³(Bot) 网络请求异常: {e}")
 
             # 2. SendKey模式 (Bot失败或未配置Bot时尝试)
             if self._sckey:
