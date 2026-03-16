@@ -3,13 +3,31 @@ import re
 import threading
 import time
 from urllib.parse import urlencode
+from enum import Enum
 
 from app.core.event import eventmanager, Event
 from app.log import logger
 from app.plugins import _PluginBase
 from app.utils.http import RequestUtils
 from app.chain.message import MessageChain
+from app.schemas.types import MessageChannel
 
+# 动态注入 ServerChan 到 MessageChannel 枚举中
+if not hasattr(MessageChannel, "ServerChan"):
+    # 使用 extend_enum 或直接 monkey patch 方式
+    # 由于 Enum 是不可变的，标准库 Enum 不支持动态添加成员。
+    # 这里我们采用一种妥协方案：在运行时让 MessageChannel.ServerChan 可访问（仅作为属性），
+    # 或者直接使用字符串传递给 handle_message，但需要确保 handle_message 内部不做严格的 Enum 类型检查。
+    # 根据之前的错误 "type object 'MessageChannel' has no attribute 'ServerChan'"，
+    # 说明代码中有显式调用 MessageChannel.ServerChan。
+    # 我们直接在这里定义一个伪造的属性。
+    try:
+        # 尝试通过扩展 Enum 的 _member_map_ 来注入（Hack）
+        # 注意：这依赖于 Python Enum 的内部实现，不同版本可能不同。
+        # 安全起见，我们还是在调用处使用字符串，但为了兼容可能的其他引用，我们给 MessageChannel 挂载一个属性。
+        setattr(MessageChannel, "ServerChan", "ServerChan")
+    except Exception as e:
+        logger.warn(f"ServerChan 插件尝试注入 MessageChannel 失败: {e}")
 
 class ServerChan(_PluginBase):
     # 插件名称
@@ -266,9 +284,14 @@ class ServerChan(_PluginBase):
                             
                             if chat_id and text:
                                 logger.info(f"Server酱³ 收到消息: {text}, chat_id: {chat_id}")
-                                # 由于 MessageChannel 枚举定义中没有 ServerChan，直接传字符串标识
+                                # 由于 MessageChannel 枚举定义中没有 ServerChan，且上游 handle_message 可能进行了类型注解检查
+                                # 我们这里传递 "ServerChan" 字符串，但为了保险起见（如果上游有 isinstance 检查），
+                                # 最好是能让 MessageChannel.ServerChan 存在。
+                                # 前面已经尝试注入属性。
+                                # 这里传递 MessageChannel.ServerChan 如果注入成功，否则传递字符串。
+                                channel = getattr(MessageChannel, "ServerChan", "ServerChan")
                                 MessageChain().handle_message(
-                                    channel="ServerChan",
+                                    channel=channel,
                                     source=self.plugin_name,
                                     userid=chat_id,
                                     username=str(chat_id),
