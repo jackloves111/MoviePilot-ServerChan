@@ -4,7 +4,7 @@
     "description": "通过Server酱³发送消息通知，支持APP推送",
     "labels": "通知,Server酱",
     "version": "1.0.0",
-    "icon": "icons/serverchan.png",
+    "icon": "serverchan.png",
     "author": "SilentReed",
     "level": 1,
     "v2": true,

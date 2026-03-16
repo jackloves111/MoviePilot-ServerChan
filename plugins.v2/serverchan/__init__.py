@@ -106,7 +106,7 @@ class ServerChan(_PluginBase):
     # 插件描述
     plugin_desc = "通过Server酱³发送消息通知，支持Bot互动"
     # 插件图标
-    plugin_icon = "icons/serverchan.png"
+    plugin_icon = "serverchan.png"
     # 插件版本
     plugin_version = "1.0.0"
     # 插件作者
