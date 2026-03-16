@@ -395,9 +395,14 @@ class ServerChan(_PluginBase):
                         "parse_mode": "markdown",
                     }
                     try:
+                        logger.info(f"Server酱³(Bot) 准备发送请求, URL: {api_url}, Data: {data}")
                         res = RequestUtils(headers={'Content-Type': 'application/json'}).post_res(api_url, json=data)
-                        if res and res.status_code == 200:
+                        
+                        if res is None:
+                            logger.warn(f"Server酱³(Bot) RequestUtils 返回了 None，可能发生网络异常且被底层拦截")
+                        elif res.status_code == 200:
                             result = res.json()
+                            logger.info(f"Server酱³(Bot) 接口返回: {result}")
                             if result.get("ok"):
                                 logger.info(f"Server酱³(Bot) 消息发送成功: {title}")
                                 return True, "发送成功"
@@ -406,7 +411,7 @@ class ServerChan(_PluginBase):
                                 logger.warn(f"Server酱³(Bot) 消息发送失败: {error_msg}")
                         else:
                             status = res.status_code if res else "None"
-                            logger.warn(f"Server酱³(Bot) 消息发送失败，状态码: {status}")
+                            logger.warn(f"Server酱³(Bot) 消息发送失败，状态码: {status}, 响应内容: {res.text if res else 'None'}")
                     except Exception as e:
                         logger.error(f"Server酱³(Bot) 网络请求异常: {e}")
 
