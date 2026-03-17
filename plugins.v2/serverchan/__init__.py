@@ -319,10 +319,14 @@ class ServerChan(_PluginBase):
                 if not self._uid:
                     return False, "SendKey模式需要配置UID"
                 
+                # 格式化消息内容：换行符转换
+                if text:
+                    text = text.replace("\n\n", "\n\n").replace("\n", "\n\n")
+
                 url = self._push_api_base % (self._uid, self._sckey)
                 data = {
                     "title": title,
-                    "desp": f"{title}\n\n{text}",
+                    "desp": text,
                     "tags": "MoviePilot",
                 }
 
