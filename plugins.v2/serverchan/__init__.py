@@ -323,6 +323,7 @@ class ServerChan(_PluginBase):
                 data = {
                     "title": title,
                     "desp": f"{title}\n\n{text}",
+                    "tags": "MoviePilot",
                 }
 
                 logger.info(f"Server酱³(SendKey) 发送消息: {title}")
