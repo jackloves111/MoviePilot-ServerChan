@@ -12,19 +12,19 @@
 
 ![img](https://sc3.ft07.com/images/20260204225914.png)
 
-1. 下载并安装 Server酱³ 1.1.0+ 版本的客户端
+2. 下载并安装 Server酱³ 1.1.0+ 版本的客户端
    - Android 1.1.0+94 APK [下载链接](https://the7.ft07.com/upload/serverchan3-1.1.0-b94.apk)
    - iOS 1.1.0+93 TestFlight [链接](https://testflight.apple.com/join/JRY9g28a)
-2. 输入Sendkey 登入
-3. 点击右上角头像左边的机器人图标，进入 Bot 管理界面
+3. 输入Sendkey 登入
+4. 点击右上角头像左边的机器人图标，进入 Bot 管理界面
 
 ![img](https://sc3.ft07.com/images/20260204230046.png)
 
-1. 点击右上角+创建一个新的 Bot
+5. 点击右上角+创建一个新的 Bot
 
 ![img](https://sc3.ft07.com/images/20260204230203.png)
 
-1. 在 Bot 列表中左滑，点击【编辑】
+6. 在 Bot 列表中左滑，点击【编辑】
 
 ![img](https://sc3.ft07.com/images/20260204230341.png)
 

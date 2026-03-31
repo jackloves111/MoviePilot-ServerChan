@@ -19,7 +19,7 @@ class ServerChan(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/jackloves111/MoviePilot-ServerChan/main/icons/serverchan.png"
     # 插件版本
-    plugin_version = "1.0.2"
+    plugin_version = "1.0.3"
     # 插件作者
     plugin_author = "SilentReed"
     # 作者主页
@@ -431,6 +431,69 @@ class ServerChan(_PluginBase):
 
         logger.info(f"Server酱³ 收到系统通知: {title}")
         return self._send_message(title, text, userid)
+
+    def post_medias_message(self, message, medias: list, **kwargs) -> None:
+        """
+        发送媒体列表消息
+        """
+        if not self.get_state():
+            return
+
+        channel = getattr(message, "channel", None)
+        source = getattr(message, "source", None)
+        
+        channel_value = channel.value if hasattr(channel, "value") else channel
+        web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
+
+        if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
+            title = getattr(message, 'title', None)
+            userid = getattr(message, 'userid', None)
+            
+            items = []
+            for idx, item in enumerate(medias, 1):
+                item_title = getattr(item, "title", None) or getattr(item, "name", None)
+                item_year = getattr(item, "year", None)
+                item_vote = getattr(item, "vote_average", None)
+                
+                line = f"{idx}. {item_title}"
+                if item_year:
+                    line += f" ({item_year})"
+                if item_vote:
+                    line += f" 评分：{item_vote}"
+                items.append(line)
+
+            text = "\n".join(items)
+            
+            self._send_message(title, text, userid)
+
+    def post_torrents_message(self, message, torrents: list, **kwargs) -> None:
+        """
+        发送种子列表消息
+        """
+        if not self.get_state():
+            return
+
+        channel = getattr(message, "channel", None)
+        source = getattr(message, "source", None)
+        
+        channel_value = channel.value if hasattr(channel, "value") else channel
+        web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
+
+        if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
+            title = getattr(message, 'title', None)
+            userid = getattr(message, 'userid', None)
+            
+            items = []
+            for idx, context in enumerate(torrents, 1):
+                torrent = getattr(context, "torrent_info", None)
+                if torrent:
+                    site_name = getattr(torrent, "site_name", "")
+                    seeders = getattr(torrent, "seeders", 0)
+                    items.append(f"{idx}. {site_name} - {seeders}↑")
+
+            text = "\n".join(items)
+            
+            self._send_message(title, text, userid)
 
     def stop_service(self):
         """
