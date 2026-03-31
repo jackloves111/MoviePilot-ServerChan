@@ -19,7 +19,7 @@ class ServerChan(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/jackloves111/MoviePilot-ServerChan/main/icons/serverchan.png"
     # 插件版本
-    plugin_version = "1.0.6"
+    plugin_version = "1.0.7"
     # 插件作者
     plugin_author = "SilentReed"
     # 作者主页
@@ -298,9 +298,13 @@ class ServerChan(_PluginBase):
                 target_chat_id = userid or self._chat_id
                 if target_chat_id:
                     api_url = self._bot_api_base % self._token + "/sendMessage"
+                    
+                    # 构建消息内容，如果 text 为空则只发送 title
+                    msg_text = f"*{title}*\n\n{text}" if text else f"*{title}*"
+                    
                     data = {
                         "chat_id": target_chat_id,
-                        "text": f"*{title}*\n\n{text}",
+                        "text": msg_text,
                         "parse_mode": "markdown",
                     }
                     try:
@@ -439,6 +443,10 @@ class ServerChan(_PluginBase):
             title = getattr(message, 'title', None)
             text = getattr(message, 'text', None)
             userid = getattr(message, 'userid', None)
+            
+            # 处理 text 为 None 的情况，避免拼接出字面量 "None"
+            if text is None:
+                text = ""
             
             logger.info(f"Server酱³ 调试 post_message 准备发送 - title: {title}, userid: {userid}")
             self._send_message(title, text, userid)
