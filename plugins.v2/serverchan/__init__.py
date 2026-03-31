@@ -19,7 +19,7 @@ class ServerChan(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/jackloves111/MoviePilot-ServerChan/main/icons/serverchan.png"
     # 插件版本
-    plugin_version = "1.0.8"
+    plugin_version = "1.0.9"
     # 插件作者
     plugin_author = "SilentReed"
     # 作者主页
@@ -65,8 +65,10 @@ class ServerChan(_PluginBase):
         self._chat_id = self._uid
 
         if self._onlyonce:
-            self._onlyonce = False
             self._send_message("Server酱³通知测试", "插件已启用")
+            self._onlyonce = False
+            config["onlyonce"] = False
+            self.update_config(config)
             
         # 启动轮询线程
         self.stop_service()
@@ -174,7 +176,7 @@ class ServerChan(_PluginBase):
                                         'component': 'VSwitch',
                                         'props': {
                                             'model': 'onlyonce',
-                                            'label': '测试插件（立即运行）',
+                                            'label': '测试插件（立即运行一次）',
                                         }
                                     }
                                 ]
