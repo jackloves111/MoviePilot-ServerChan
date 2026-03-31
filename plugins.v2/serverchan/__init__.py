@@ -19,7 +19,7 @@ class ServerChan(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/jackloves111/MoviePilot-ServerChan/main/icons/serverchan.png"
     # 插件版本
-    plugin_version = "1.0.5"
+    plugin_version = "1.0.6"
     # 插件作者
     plugin_author = "SilentReed"
     # 作者主页
@@ -130,6 +130,7 @@ class ServerChan(_PluginBase):
         暴露插件的内部方法给 ChainBase 调用
         """
         return {
+            "post_message": self.post_message,
             "post_medias_message": self.post_medias_message,
             "post_torrents_message": self.post_torrents_message
         }
@@ -398,40 +399,13 @@ class ServerChan(_PluginBase):
 
         logger.info(f"Server酱³ 调试 - channel_value={channel_value}, web_channel_value={web_channel_value}, source={source}, plugin_name={self.plugin_name}")
 
+        # 当消息来源于自身渠道 (Web 或 Server酱³通知) 时，忽略广播事件。
+        # 原因是：MoviePilot 对于主动交互操作（如选集后添加订阅）产生的结果，
+        # 除了触发系统广播外，还会将其直接推入 MessageQueue，最终由 post_message 接收。
+        # 拦截广播事件可以防止用户收到两条一模一样的文本回复。
         if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
-            logger.info(f"Server酱³ 拦截到回复消息: {getattr(msg_body, 'title', None)}")
-            title = getattr(msg_body, 'title', None)
-            text = getattr(msg_body, 'text', None)
-            userid = getattr(msg_body, 'userid', None)
-
-            # 阻止系统通知的重复发送，因为 medias 和 torrents 会由单独的接口接管
-            if event_data.get("medias") or event_data.get("torrents"):
-                logger.info("Server酱³ 忽略包含 medias/torrents 的 EventType.NoticeMessage，交由专属方法处理")
-                return
-
-            note = event_data.get("medias") if isinstance(event_data, dict) else None
-            if note and isinstance(note, list):
-                items = []
-                for idx, item in enumerate(note, 1):
-                    item_title = item.get("title") or item.get("name")
-                    item_year = item.get("year")
-                    item_type = item.get("type")
-                    item_vote = item.get("vote_average")
-
-                    line = f"{idx}. {item_title} ({item_year})"
-                    if item_vote:
-                        line += f" 评分：{item_vote}"
-                    items.append(line)
-
-                text = "\n".join(items)
-                if title:
-                    text = f"{title}\n\n{text}"
-
-            elif not text and title:
-                text = title
-                title = "系统通知"
-
-            return self._send_message(title, text, userid)
+            logger.info(f"Server酱³ 拦截并丢弃来自自身交互的广播消息，防重复: {getattr(msg_body, 'title', None)}")
+            return
 
         title = getattr(msg_body, 'title', None) or (msg_body.get("title") if isinstance(msg_body, dict) else None)
         text = getattr(msg_body, 'text', None) or (msg_body.get("text") if isinstance(msg_body, dict) else None)
@@ -440,15 +414,34 @@ class ServerChan(_PluginBase):
         if not title and not text:
             return
 
-        if source == self.plugin_name:
-            return
-
         # 过滤包含媒体/种子列表的事件，由 post_medias_message 等方法处理
         if isinstance(event_data, dict) and (event_data.get("medias") or event_data.get("torrents")):
             return
 
         logger.info(f"Server酱³ 收到系统通知: {title}")
         return self._send_message(title, text, userid)
+
+    def post_message(self, message, **kwargs) -> None:
+        """
+        接收 MessageQueue 的文本消息调用
+        """
+        logger.info(f"Server酱³ 调试 post_message 被调用 - message: {getattr(message, 'title', '')}")
+        if not self.get_state():
+            return
+            
+        channel = getattr(message, "channel", None)
+        source = getattr(message, "source", None)
+        
+        channel_value = channel.value if hasattr(channel, "value") else channel
+        web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
+
+        if str(channel_value) == str(web_channel_value) and (not source or source == self.plugin_name):
+            title = getattr(message, 'title', None)
+            text = getattr(message, 'text', None)
+            userid = getattr(message, 'userid', None)
+            
+            logger.info(f"Server酱³ 调试 post_message 准备发送 - title: {title}, userid: {userid}")
+            self._send_message(title, text, userid)
 
     def post_medias_message(self, message, medias: list, **kwargs) -> None:
         """
