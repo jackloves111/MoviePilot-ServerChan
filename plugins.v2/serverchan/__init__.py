@@ -19,7 +19,7 @@ class ServerChan(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/jackloves111/MoviePilot-ServerChan/main/icons/serverchan.png"
     # 插件版本
-    plugin_version = "1.0.3"
+    plugin_version = "1.0.4"
     # 插件作者
     plugin_author = "SilentReed"
     # 作者主页
