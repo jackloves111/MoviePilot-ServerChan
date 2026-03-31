@@ -3,12 +3,13 @@
     "name": "Server酱³通知",
     "description": "通过Server酱³发送消息通知，支持APP推送",
     "labels": "通知,Server酱",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "icon": "serverchan.png",
     "author": "SilentReed",
     "level": 1,
     "v2": true,
     "history": {
+      "v1.0.2": "修复Notification对象属性获取方式，使用getattr代替get方法",
       "v1.0.1": "修复Bot互动时媒体列表消息未能正确发送的问题",
       "v1.0.0": "新插件发布"
     }

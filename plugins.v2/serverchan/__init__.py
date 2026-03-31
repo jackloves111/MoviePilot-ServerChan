@@ -19,7 +19,7 @@ class ServerChan(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/jackloves111/MoviePilot-ServerChan/main/icons/serverchan.png"
     # 插件版本
-    plugin_version = "1.0.1"
+    plugin_version = "1.0.2"
     # 插件作者
     plugin_author = "SilentReed"
     # 作者主页
@@ -374,22 +374,26 @@ class ServerChan(_PluginBase):
                 msg_body = message_obj
             else:
                 msg_body = event_data
+        elif hasattr(event_data, "channel"):
+            msg_body = event_data
         elif hasattr(event_data, "to_dict"):
             msg_body = event_data.to_dict()
         else:
             msg_body = event_data
 
-        channel = msg_body.get("channel")
-        source = msg_body.get("source")
+        channel = getattr(msg_body, "channel", None)
+        source = getattr(msg_body, "source", None)
 
         channel_value = channel.value if hasattr(channel, "value") else channel
         web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
 
+        logger.info(f"Server酱³ 调试 - channel_value={channel_value}, web_channel_value={web_channel_value}, source={source}, plugin_name={self.plugin_name}")
+
         if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
-            logger.info(f"Server酱³ 拦截到回复消息: {msg_body.get('title')}")
-            title = msg_body.get("title")
-            text = msg_body.get("text")
-            userid = msg_body.get("userid")
+            logger.info(f"Server酱³ 拦截到回复消息: {getattr(msg_body, 'title', None)}")
+            title = getattr(msg_body, 'title', None)
+            text = getattr(msg_body, 'text', None)
+            userid = getattr(msg_body, 'userid', None)
 
             note = event_data.get("medias") if isinstance(event_data, dict) else None
             if note and isinstance(note, list):
@@ -415,9 +419,9 @@ class ServerChan(_PluginBase):
 
             return self._send_message(title, text, userid)
 
-        title = msg_body.get("title")
-        text = msg_body.get("text")
-        userid = msg_body.get("userid")
+        title = getattr(msg_body, 'title', None) or (msg_body.get("title") if isinstance(msg_body, dict) else None)
+        text = getattr(msg_body, 'text', None) or (msg_body.get("text") if isinstance(msg_body, dict) else None)
+        userid = getattr(msg_body, 'userid', None) or (msg_body.get("userid") if isinstance(msg_body, dict) else None)
 
         if not title and not text:
             return
