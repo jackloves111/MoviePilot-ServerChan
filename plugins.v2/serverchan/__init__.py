@@ -125,6 +125,15 @@ class ServerChan(_PluginBase):
     def get_api(self) -> List[Dict[str, Any]]:
         pass
 
+    def get_module(self) -> Dict[str, Any]:
+        """
+        暴露插件的内部方法给 ChainBase 调用
+        """
+        return {
+            "post_medias_message": self.post_medias_message,
+            "post_torrents_message": self.post_torrents_message
+        }
+
     def get_form(self) -> Tuple[List[dict], Dict[str, Any]]:
         """
         拼装插件配置页面
@@ -436,6 +445,7 @@ class ServerChan(_PluginBase):
         """
         发送媒体列表消息
         """
+        logger.info(f"Server酱³ 调试 post_medias_message 被调用 - message: {getattr(message, 'title', '')}, medias_len: {len(medias)}")
         if not self.get_state():
             return
 
@@ -444,6 +454,8 @@ class ServerChan(_PluginBase):
         
         channel_value = channel.value if hasattr(channel, "value") else channel
         web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
+
+        logger.info(f"Server酱³ 调试 post_medias_message - channel: {channel_value}, web_channel: {web_channel_value}, source: {source}")
 
         if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
             title = getattr(message, 'title', None)
@@ -464,12 +476,14 @@ class ServerChan(_PluginBase):
 
             text = "\n".join(items)
             
+            logger.info(f"Server酱³ 调试 post_medias_message 准备发送 - title: {title}, userid: {userid}")
             self._send_message(title, text, userid)
 
     def post_torrents_message(self, message, torrents: list, **kwargs) -> None:
         """
         发送种子列表消息
         """
+        logger.info(f"Server酱³ 调试 post_torrents_message 被调用 - message: {getattr(message, 'title', '')}, torrents_len: {len(torrents)}")
         if not self.get_state():
             return
 
@@ -478,6 +492,8 @@ class ServerChan(_PluginBase):
         
         channel_value = channel.value if hasattr(channel, "value") else channel
         web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
+
+        logger.info(f"Server酱³ 调试 post_torrents_message - channel: {channel_value}, web_channel: {web_channel_value}, source: {source}")
 
         if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
             title = getattr(message, 'title', None)
@@ -493,6 +509,7 @@ class ServerChan(_PluginBase):
 
             text = "\n".join(items)
             
+            logger.info(f"Server酱³ 调试 post_torrents_message 准备发送 - title: {title}, userid: {userid}")
             self._send_message(title, text, userid)
 
     def stop_service(self):
