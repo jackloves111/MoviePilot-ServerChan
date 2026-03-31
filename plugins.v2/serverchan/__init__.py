@@ -19,7 +19,7 @@ class ServerChan(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/jackloves111/MoviePilot-ServerChan/main/icons/serverchan.png"
     # 插件版本
-    plugin_version = "1.0.7"
+    plugin_version = "1.0.8"
     # 插件作者
     plugin_author = "SilentReed"
     # 作者主页
@@ -269,13 +269,11 @@ class ServerChan(_PluginBase):
                             
                             if chat_id and text:
                                 logger.info(f"Server酱³ 收到消息: {text}, chat_id: {chat_id}")
-                                # 使用 MessageChannel.Web 作为代理渠道
-                                # source 保持为 plugin_name，以便在日志中区分
                                 MessageChain().handle_message(
                                     channel=MessageChannel.Web,
                                     source=self.plugin_name,
                                     userid=chat_id,
-                                    username=str(chat_id),
+                                    username=f"Server酱³{chat_id}",
                                     text=text
                                 )
                 else:
