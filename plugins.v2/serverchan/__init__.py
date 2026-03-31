@@ -19,7 +19,7 @@ class ServerChan(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/jackloves111/MoviePilot-ServerChan/main/icons/serverchan.png"
     # 插件版本
-    plugin_version = "1.0.4"
+    plugin_version = "1.0.5"
     # 插件作者
     plugin_author = "SilentReed"
     # 作者主页
@@ -404,6 +404,11 @@ class ServerChan(_PluginBase):
             text = getattr(msg_body, 'text', None)
             userid = getattr(msg_body, 'userid', None)
 
+            # 阻止系统通知的重复发送，因为 medias 和 torrents 会由单独的接口接管
+            if event_data.get("medias") or event_data.get("torrents"):
+                logger.info("Server酱³ 忽略包含 medias/torrents 的 EventType.NoticeMessage，交由专属方法处理")
+                return
+
             note = event_data.get("medias") if isinstance(event_data, dict) else None
             if note and isinstance(note, list):
                 items = []
@@ -438,6 +443,10 @@ class ServerChan(_PluginBase):
         if source == self.plugin_name:
             return
 
+        # 过滤包含媒体/种子列表的事件，由 post_medias_message 等方法处理
+        if isinstance(event_data, dict) and (event_data.get("medias") or event_data.get("torrents")):
+            return
+
         logger.info(f"Server酱³ 收到系统通知: {title}")
         return self._send_message(title, text, userid)
 
@@ -457,7 +466,8 @@ class ServerChan(_PluginBase):
 
         logger.info(f"Server酱³ 调试 post_medias_message - channel: {channel_value}, web_channel: {web_channel_value}, source: {source}")
 
-        if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
+        # 只要是由 Server酱 发起的搜索（或者没有指定来源），或者是发给所有渠道的，都应该进行回复
+        if str(channel_value) == str(web_channel_value) and (not source or source == self.plugin_name):
             title = getattr(message, 'title', None)
             userid = getattr(message, 'userid', None)
             
@@ -495,7 +505,7 @@ class ServerChan(_PluginBase):
 
         logger.info(f"Server酱³ 调试 post_torrents_message - channel: {channel_value}, web_channel: {web_channel_value}, source: {source}")
 
-        if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
+        if str(channel_value) == str(web_channel_value) and (not source or source == self.plugin_name):
             title = getattr(message, 'title', None)
             userid = getattr(message, 'userid', None)
             
