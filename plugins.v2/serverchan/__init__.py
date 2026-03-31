@@ -19,7 +19,7 @@ class ServerChan(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/jackloves111/MoviePilot-ServerChan/main/icons/serverchan.png"
     # 插件版本
-    plugin_version = "1.0.0"
+    plugin_version = "1.0.1"
     # 插件作者
     plugin_author = "SilentReed"
     # 作者主页
@@ -365,78 +365,56 @@ class ServerChan(_PluginBase):
 
         if not event.event_data:
             return
-            
-        # 拦截发往 Web 渠道但 source 是本插件的消息
-        # 这是因为我们使用 MessageChannel.Web 作为 Bot 接收消息的代理渠道
-        # MoviePilot 会将回复消息也发往 Web 渠道
-        # 我们需要在这里拦截并转发给 ServerChan Bot
-        
-        # 尝试解析 event_data
-        event_data = event.event_data
-        
-        # 1. 处理 Notification 对象或字典
-        if isinstance(event_data, dict):
-            # 可能是直接的字典
-            msg_body = event_data
-        elif hasattr(event_data, "to_dict"):
-             # 可能是 Notification 对象
-             msg_body = event_data.to_dict()
-        else:
-             # 未知类型，尝试直接属性访问
-             msg_body = event_data
 
-        # 获取消息属性
+        event_data = event.event_data
+
+        if isinstance(event_data, dict):
+            message_obj = event_data.get("message")
+            if message_obj and hasattr(message_obj, "channel"):
+                msg_body = message_obj
+            else:
+                msg_body = event_data
+        elif hasattr(event_data, "to_dict"):
+            msg_body = event_data.to_dict()
+        else:
+            msg_body = event_data
+
         channel = msg_body.get("channel")
         source = msg_body.get("source")
-        
-        # 检查是否需要拦截转发
-        # 条件：渠道是 Web，且来源是 Server酱³通知
-        
+
         channel_value = channel.value if hasattr(channel, "value") else channel
         web_channel_value = MessageChannel.Web.value if hasattr(MessageChannel.Web, "value") else "Web"
-        
-        if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
-             logger.info(f"Server酱³ 拦截到回复消息: {msg_body.get('title')}")
-             # 提取内容
-             title = msg_body.get("title")
-             text = msg_body.get("text")
-             userid = msg_body.get("userid")
-             
-             # 如果是列表选择消息（SearchResult），MoviePilot 会发送 Notification 对象
-             # 我们需要处理这种情况
-             
-             # 尝试从 event_data 获取 note，其中可能包含媒体列表
-             note = msg_body.get("note")
-             if note and isinstance(note, list):
-                 # 这是一条媒体列表消息
-                 
-                 items = []
-                 for idx, item in enumerate(note, 1):
-                     # item 是字典
-                     item_title = item.get("title") or item.get("name")
-                     item_year = item.get("year")
-                     item_type = item.get("type")
-                     item_vote = item.get("vote_average")
-                     
-                     line = f"{idx}. {item_title} ({item_year})"
-                     if item_vote:
-                         line += f" 评分：{item_vote}"
-                     items.append(line)
-                 
-                 text = "\n".join(items)
-                 if title:
-                     text = f"{title}\n\n{text}"
-             
-             # 如果没有 text 但有 title，可能是列表选择提示
-             elif not text and title:
-                 text = title
-                 title = "系统通知"
-                 
-             # 发送给 Bot
-             return self._send_message(title, text, userid)
 
-        # 2. 处理常规的 NoticeMessage（非拦截）
-        # 提取基本信息
+        if str(channel_value) == str(web_channel_value) and source == self.plugin_name:
+            logger.info(f"Server酱³ 拦截到回复消息: {msg_body.get('title')}")
+            title = msg_body.get("title")
+            text = msg_body.get("text")
+            userid = msg_body.get("userid")
+
+            note = event_data.get("medias") if isinstance(event_data, dict) else None
+            if note and isinstance(note, list):
+                items = []
+                for idx, item in enumerate(note, 1):
+                    item_title = item.get("title") or item.get("name")
+                    item_year = item.get("year")
+                    item_type = item.get("type")
+                    item_vote = item.get("vote_average")
+
+                    line = f"{idx}. {item_title} ({item_year})"
+                    if item_vote:
+                        line += f" 评分：{item_vote}"
+                    items.append(line)
+
+                text = "\n".join(items)
+                if title:
+                    text = f"{title}\n\n{text}"
+
+            elif not text and title:
+                text = title
+                title = "系统通知"
+
+            return self._send_message(title, text, userid)
+
         title = msg_body.get("title")
         text = msg_body.get("text")
         userid = msg_body.get("userid")
@@ -444,7 +422,6 @@ class ServerChan(_PluginBase):
         if not title and not text:
             return
 
-        # 避免死循环：如果消息来源就是自己，且不是为了回复 Bot（上面已经处理了回复），则忽略
         if source == self.plugin_name:
             return
 
